@@ -277,7 +277,10 @@ class Player {
 				System.out.println(String.format("MOVE %d", index));
 				break;
 			case GIVE_PHASE:
-				// will appear in Wood 1 League
+				if(myCardsInHand[CardType.BONUS.ordinal()] > 0) {
+					System.out.println(String.format("GIVE %d", CardType.BONUS.ordinal()));
+					break;
+				}
 				System.out.println("RANDOM");
 				break;
 			case THROW_PHASE:
@@ -285,8 +288,11 @@ class Player {
 				System.out.println("RANDOM");
 				break;
 			case PLAY_PHASE:
-				// will appear in Wood 1 League
-				System.out.println("RANDOM");
+				if(myCardsInHand[CardType.ARCHITECTURE_STUDY.ordinal()] > 0) {
+					System.out.println("ARCHITECTURE_STUDY");
+					break;
+				}
+				System.out.println("WAIT");
 				break;
 			case RELEASE_PHASE:
 				System.err.println("RELEASE PHASE");
