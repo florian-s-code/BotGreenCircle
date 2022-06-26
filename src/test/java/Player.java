@@ -140,29 +140,31 @@ class Player {
 
 	}
 	
+	static int[] sumAllNeededResources(List<Application> applications) {
+		return applications.stream().reduce(
+				new int[RESOURCES_COUNT],
+				(BiFunction<int[], ? super Application, int[]>) (resourceSum, app) -> {
+					int[] result = new int[RESOURCES_COUNT];
+					for(int i = 0; i < RESOURCES_COUNT; i++) {
+						result[i] = resourceSum[i] + app.resources[i];
+					}
+					return result;
+				},
+				(BinaryOperator<int[]>) (sumA, sumB) -> {
+					int[] result = new int[RESOURCES_COUNT];
+					for(int i = 0; i < RESOURCES_COUNT; i++) {
+						result[i] = sumA[i] + sumB[i];
+					}
+					return result;
+			});
+	}
+	
 	static CardType findBestZoneMiddle(List<Application> applications, int[] cardsInDiscard) {
 		//compare the resource needed for all applications to the resource in hand to find the most needed one.
 		assert cardsInDiscard.length == RESOURCES_COUNT+2: "carsInDraw has the wrong element number";
-		int[] applicationsResourceSum = new int[RESOURCES_COUNT];
-		
 		System.err.println(Arrays.toString(cardsInDiscard));
 		
-		applicationsResourceSum = applications.stream().reduce(
-			new int[RESOURCES_COUNT],
-			(BiFunction<int[], ? super Application, int[]>) (resourceSum, app) -> {
-				int[] result = new int[RESOURCES_COUNT];
-				for(int i = 0; i < RESOURCES_COUNT; i++) {
-					result[i] = resourceSum[i] + app.resources[i];
-				}
-				return result;
-			},
-			(BinaryOperator<int[]>) (sumA, sumB) -> {
-				int[] result = new int[RESOURCES_COUNT];
-				for(int i = 0; i < RESOURCES_COUNT; i++) {
-					result[i] = sumA[i] + sumB[i];
-				}
-				return result;
-		});
+		int[] applicationsResourceSum = sumAllNeededResources(applications);
 		System.err.println(Arrays.toString(applicationsResourceSum));
 		
 		int resourceNeededIndex = 0;
@@ -179,7 +181,20 @@ class Player {
 	}
 	
 	static CardType findBestZoneEndGame(List<Application> applications, int[] cardsInDiscard)  {
-		return findBestZoneMiddle(applications, cardsInDiscard);
+		//we have to maximze the chance we have all the card for an application
+		//look for a type of card needed we do not have
+		int[] applicationsResourceSum = sumAllNeededResources(applications);
+		int neededResource = -1;
+		for(int i = 0; i < RESOURCES_COUNT; i++) {
+			if(applicationsResourceSum[i] > 0 && cardsInDiscard[i] ==0) { neededResource = i; }
+		}
+		
+		if(neededResource == -1) {
+			return CardType.values()[neededResource];
+		}
+		else { //in case we have everything, go back to the first heuristics
+			return findBestZoneMiddle(applications, cardsInDiscard);
+		}
 		
 	}
 	
@@ -270,7 +285,7 @@ class Player {
 				
 				CardType bestZone = findBestZone(myScore, new ArrayList<Application>(applications.values()), myDiscardPile);
 				int index = bestZone.ordinal();
-				if(index == myLocation) {
+				if(index == myLocation || Math.abs(myLocation-opponentLocation) <=1 ) {
 					System.out.println("RANDOM");
 					break;
 				}
