@@ -302,7 +302,7 @@ class Player {
 					break;
 				}
 				ReleaseCandidate candidate = findBestRelease(myCardsInHand, releaseCandidates);
-				if (candidate.technicalDebtCost > 3 && myScore < 4) {
+				if (candidate.technicalDebtCost > Math.min(turn, 3) && myScore < 4) {
 					System.out.println("WAIT");
 					break;
 				}
