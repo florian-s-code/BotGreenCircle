@@ -285,9 +285,8 @@ class Player {
 				
 				CardType bestZone = findBestZone(myScore, new ArrayList<Application>(applications.values()), myDiscardPile);
 				int index = bestZone.ordinal();
-				if(index == myLocation || Math.abs(myLocation-opponentLocation) <=1 ) {
-					System.out.println("RANDOM");
-					break;
+				while(index == myLocation || Math.abs(index-opponentLocation) <=1 || Math.abs(index-opponentLocation) == 7 ) {
+					index = (++index)%ZONES_COUNT;
 				}
 				System.out.println(String.format("MOVE %d", index));
 				break;
