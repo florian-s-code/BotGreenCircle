@@ -1,8 +1,10 @@
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Scanner;
+import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 
@@ -159,48 +161,73 @@ class Player {
 			});
 	}
 	
-	static CardType findBestZoneMiddle(List<Application> applications, int[] cardsInDiscard) {
+	static CardType[] findBestZoneMiddle(List<Application> applications, int[] cardsInDiscard) {
 		//compare the resource needed for all applications to the resource in hand to find the most needed one.
 		assert cardsInDiscard.length == RESOURCES_COUNT+2: "carsInDraw has the wrong element number";
-		System.err.println(Arrays.toString(cardsInDiscard));
 		
 		int[] applicationsResourceSum = sumAllNeededResources(applications);
-		System.err.println(Arrays.toString(applicationsResourceSum));
 		
-		int resourceNeededIndex = 0;
-		int maxResourceNeed = 0;
+		//store CardType in reverse order of score
+		TreeMap<Integer, CardType> sortedResult = new TreeMap<Integer, CardType>(Collections.reverseOrder());
+		
 		for(int i = 0; i < RESOURCES_COUNT; i++) {
 			int resourceDiff = applicationsResourceSum[i] - cardsInDiscard[i];
-			if(resourceDiff > maxResourceNeed) {
-				resourceNeededIndex = i;
-				maxResourceNeed =  resourceDiff;
+			//score corresponds to the amount of this resource needed
+			//we use a 10* multiplier to avoid collision when multiple resources have the same needs
+			int score = resourceDiff*10;
+			while(sortedResult.containsKey(score)) {
+				score--; //find closest not colliding index
 			}
+			sortedResult.put(score, CardType.values()[i]);
 		}
 	
-		return CardType.values()[resourceNeededIndex];
+		return sortedResult.values().toArray(new CardType[0]);
 	}
 	
-	static CardType findBestZoneEndGame(List<Application> applications, int[] cardsInDiscard)  {
+	static CardType[] findBestZoneEndGame(List<Application> applications, int[] cardsInDiscard)  {
 		//we have to maximze the chance we have all the card for an application
 		//look for a type of card needed we do not have
 		int[] applicationsResourceSum = sumAllNeededResources(applications);
-		int neededResource = -1;
+		
+		//store CardType in reverse order of score
+		TreeMap<Integer, CardType> sortedResult = new TreeMap<Integer, CardType>(Collections.reverseOrder());
+		
 		for(int i = 0; i < RESOURCES_COUNT; i++) {
-			if(applicationsResourceSum[i] > 0 && cardsInDiscard[i] ==0) { neededResource = i; }
+			int score = 0;
+			//we want to bias heavily toward resources we don't have any of
+			if(cardsInDiscard[i] == 0) score += 100;
+			//then score by diff
+			int resourceDiff = applicationsResourceSum[i] - cardsInDiscard[i];
+			//we use a 10* multiplier to avoid collision when multiple resources have the same needs
+			score += resourceDiff*10;
+			while(sortedResult.containsKey(score)) {
+				score--; //find closest not colliding index
+			}
+			sortedResult.put(score, CardType.values()[i]);
 		}
-		
-		if(neededResource != -1) {
-			return CardType.values()[neededResource];
-		}
-		else { //in case we have everything, go back to the first heuristics
-			return findBestZoneMiddle(applications, cardsInDiscard);
-		}
-		
+		return sortedResult.values().toArray(new CardType[0]);
 	}
 	
-	static CardType findBestZone(int score, List<Application> applications, int[] cardsInDiscard) {
-		if(score < 4) return findBestZoneMiddle(applications, cardsInDiscard);
-		else return findBestZoneEndGame(applications, cardsInDiscard);
+	static CardType findBestZone(int myLocation, int opponentLocation, int myScore, List<Application> applications, int[] cardsInDiscard) {
+		
+		final CardType[] orderedZones = myScore < 4 ? findBestZoneMiddle(applications, cardsInDiscard) :
+												findBestZoneEndGame(applications, cardsInDiscard);
+		
+		System.err.println(Arrays.toString(cardsInDiscard));
+		System.err.println(Arrays.toString(orderedZones));
+		
+		//default result
+		CardType result = orderedZones[0].ordinal() != myLocation ? orderedZones[0] : orderedZones[1];
+		//find a better result by iterating and stopping at the first good one
+		for(int i = 0; i < orderedZones.length; i++) {
+			final int index = orderedZones[i].ordinal();
+			if(index != myLocation && Math.abs(index-opponentLocation) > 1 && Math.abs(index-opponentLocation) != 7 ) {
+				result = orderedZones[i];
+				break;
+			}
+		}
+		
+		return result;
 		
 	}
 
@@ -282,13 +309,9 @@ class Player {
 			switch (gamePhase) {
 			case MOVE_PHASE:
 				turn++;
-				
-				CardType bestZone = findBestZone(myScore, new ArrayList<Application>(applications.values()), myDiscardPile);
-				int index = bestZone.ordinal();
-				while(index == myLocation || Math.abs(index-opponentLocation) <=1 || Math.abs(index-opponentLocation) == 7 ) {
-					index = (++index)%ZONES_COUNT;
-				}
-				System.out.println(String.format("MOVE %d", index));
+				final CardType bestZone = findBestZone(myLocation, opponentLocation, myScore, new ArrayList<Application>(applications.values()), myDiscardPile);
+
+				System.out.println(String.format("MOVE %d", bestZone.ordinal()));
 				break;
 			case GIVE_PHASE:
 				if(myCardsInHand[CardType.BONUS.ordinal()] > 0) {
@@ -302,10 +325,10 @@ class Player {
 				System.out.println("RANDOM");
 				break;
 			case PLAY_PHASE:
-				if(myCardsInHand[CardType.ARCHITECTURE_STUDY.ordinal()] > 0) {
+				if(myCardsInHand[CardType.ARCHITECTURE_STUDY.ordinal()] > 0 && myDrawPile[CardType.ARCHITECTURE_STUDY.ordinal()] > 0) {
 					System.out.println("ARCHITECTURE_STUDY");
 					break;
-				} else if (myCardsInHand[CardType.REFACTORING.ordinal()] > 0) {
+				} else if (myCardsInHand[CardType.REFACTORING.ordinal()] > 0 && myDrawPile[CardType.REFACTORING.ordinal()] > 0) {
 					System.out.println("REFACTORING");
 					break;
 				} 
