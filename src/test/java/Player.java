@@ -305,7 +305,10 @@ class Player {
 				if(myCardsInHand[CardType.ARCHITECTURE_STUDY.ordinal()] > 0) {
 					System.out.println("ARCHITECTURE_STUDY");
 					break;
-				}
+				} else if (myCardsInHand[CardType.REFACTORING.ordinal()] > 0) {
+					System.out.println("REFACTORING");
+					break;
+				} 
 				System.out.println("WAIT");
 				break;
 			case RELEASE_PHASE:
