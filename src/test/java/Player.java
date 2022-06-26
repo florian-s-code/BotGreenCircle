@@ -72,7 +72,7 @@ class Application {
 	public int calculatTechnicalDebt(int[] cardsInHand) {
 		int nbTechnicalDebts = 0;
 		for (int res = 0; res < Player.RESOURCES_COUNT; res++) {
-			nbTechnicalDebts += Math.max(0, this.resources[res] - cardsInHand[res]);
+			nbTechnicalDebts += Math.max(0, this.resources[res] - cardsInHand[res]*2);
 		}
 		// bonuses can remove 1 technical debt each
 		nbTechnicalDebts = Math.max(0, nbTechnicalDebts - cardsInHand[Player.CardType.BONUS.ordinal()]);
@@ -189,7 +189,7 @@ class Player {
 			if(applicationsResourceSum[i] > 0 && cardsInDiscard[i] ==0) { neededResource = i; }
 		}
 		
-		if(neededResource == -1) {
+		if(neededResource != -1) {
 			return CardType.values()[neededResource];
 		}
 		else { //in case we have everything, go back to the first heuristics
