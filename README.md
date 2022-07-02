@@ -1,3 +1,21 @@
+# Green Circle Submission
+
+Submission for the Green Circle coding challenge. More details below.
+Made in a weekend.
+
+The bot is in the `src/test/java/Player.java` file.
+
+## Global Ranking
+
+661/1758
+
+## League Ranking (Silver)
+
+374/502
+
+
+# Original README
+
 # Green Circle 
 
 [Coding Challenge](https://www.codingame.com/contests/green-circle) created by Societe Generale for [CodinGame](https://codingame.com)
